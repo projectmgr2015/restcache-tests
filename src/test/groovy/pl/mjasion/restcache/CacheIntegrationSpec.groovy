@@ -70,9 +70,7 @@ class CacheIntegrationSpec extends IntegrationSpec {
         given:
         Cache savedCache = new Cache(api: apiKey, key: cacheKey, value: 'saved_value')
         cacheRepository.save(savedCache)
-        Request allKeysRequest = new Request.Builder()
-                .url("http://localhost:8080/api/${apiKey}/${cacheKey}")
-                .build()
+        Request allKeysRequest = createCacheRequest('GET')
 
         when:
         Response response = okHttpClient.newCall(allKeysRequest).execute()
@@ -88,10 +86,7 @@ class CacheIntegrationSpec extends IntegrationSpec {
         given:
         Map cacheRequest = [cacheValue: 'somevalue']
         RequestBody body = RequestBody.create(JSON, new JsonBuilder(cacheRequest).toString())
-        Request postRequest = new Request.Builder()
-                .url("http://localhost:8080/api/${apiKey}/${cacheKey}")
-                .post(body)
-                .build()
+        Request postRequest = createCacheRequest('POST', body)
 
         when:
         okHttpClient.newCall(postRequest).execute()
@@ -107,10 +102,7 @@ class CacheIntegrationSpec extends IntegrationSpec {
         cacheRepository.save(savedCache)
         String newValue = 'newValue'
         RequestBody requestBody = RequestBody.create(JSON, "{\"cacheValue\": \"$newValue\"}")
-        Request request = new Request.Builder()
-                .url("http://localhost:8080/api/${apiKey}/${cacheKey}")
-                .put(requestBody)
-                .build()
+        Request request = createCacheRequest('PUT', requestBody)
 
         when:
         okHttpClient.newCall(request).execute()
@@ -124,10 +116,7 @@ class CacheIntegrationSpec extends IntegrationSpec {
         given:
         Cache savedCache = new Cache(api: apiKey, key: cacheKey, value: 'someValue')
         cacheRepository.save(savedCache)
-        Request deleteRequest = new Request.Builder()
-                .url("http://localhost:8080/api/${apiKey}/${cacheKey}")
-                .delete()
-                .build()
+        Request deleteRequest = createCacheRequest('DELETE')
 
         when:
         okHttpClient.newCall(deleteRequest).execute()
@@ -136,4 +125,10 @@ class CacheIntegrationSpec extends IntegrationSpec {
         cacheRepository.exists(savedCache.id) == false
     }
 
+    private Request createCacheRequest(String methodName, RequestBody methodBody = null) {
+        return new Request.Builder()
+                .url("http://localhost:8080/api/${apiKey}/${cacheKey}")
+                .method(methodName, methodBody)
+                .build()
+    }
 }

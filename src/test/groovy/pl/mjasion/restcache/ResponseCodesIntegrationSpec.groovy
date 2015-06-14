@@ -59,9 +59,7 @@ class ResponseCodesIntegrationSpec extends IntegrationSpec {
         given:
         Cache savedCache = new Cache(api: apiKey, key: cacheKey, value: 'saved_value')
         cacheRepository.save(savedCache)
-        Request allKeysRequest = new Request.Builder()
-                .url("http://localhost:8080/api/${apiKey}/${cacheKey}")
-                .build()
+        Request allKeysRequest = createCacheRequest('GET')
 
         when:
         Response response = okHttpClient.newCall(allKeysRequest).execute()
@@ -74,10 +72,7 @@ class ResponseCodesIntegrationSpec extends IntegrationSpec {
         given:
         Map cacheRequest = [cacheValue: 'somevalue']
         RequestBody body = RequestBody.create(JSON, new JsonBuilder(cacheRequest).toString())
-        Request postRequest = new Request.Builder()
-                .url("http://localhost:8080/api/${apiKey}/${cacheKey}")
-                .post(body)
-                .build()
+        Request postRequest = createCacheRequest('POST', body)
 
         when:
         Response response = okHttpClient.newCall(postRequest).execute()
@@ -92,10 +87,7 @@ class ResponseCodesIntegrationSpec extends IntegrationSpec {
         cacheRepository.save(savedCache)
         String newValue = 'newValue'
         RequestBody requestBody = RequestBody.create(JSON, "{\"cacheValue\": \"$newValue\"}")
-        Request request = new Request.Builder()
-                .url("http://localhost:8080/api/${apiKey}/${cacheKey}")
-                .put(requestBody)
-                .build()
+        Request request = createCacheRequest('PUT', requestBody)
 
         when:
         Response response = okHttpClient.newCall(request).execute()
@@ -108,10 +100,7 @@ class ResponseCodesIntegrationSpec extends IntegrationSpec {
         given:
         Cache savedCache = new Cache(api: apiKey, key: cacheKey, value: 'someValue')
         cacheRepository.save(savedCache)
-        Request deleteRequest = new Request.Builder()
-                .url("http://localhost:8080/api/${apiKey}/${cacheKey}")
-                .delete()
-                .build()
+        Request deleteRequest = createCacheRequest('DELETE')
 
         when:
         Response response = okHttpClient.newCall(deleteRequest).execute()
@@ -125,7 +114,7 @@ class ResponseCodesIntegrationSpec extends IntegrationSpec {
         cacheRepository.save(new Cache(api: apiKey, key: cacheKey, value: 'someValue'))
         Map cacheRequest = [cacheValue: 'somevalue']
         RequestBody body = RequestBody.create(JSON, new JsonBuilder(cacheRequest).toString())
-        Request postRequest = createRequest('POST', body)
+        Request postRequest = createCacheRequest('POST', body)
 
         when:
         Response response = okHttpClient.newCall(postRequest).execute()
@@ -162,7 +151,7 @@ class ResponseCodesIntegrationSpec extends IntegrationSpec {
         given:
         Map cacheRequest = [cacheValue: null]
         RequestBody body = RequestBody.create(JSON, new JsonBuilder(cacheRequest).toString())
-        Request postRequest = createRequest(methodName, body)
+        Request postRequest = createCacheRequest(methodName, body)
 
         when:
         Response response = okHttpClient.newCall(postRequest).execute()
@@ -177,7 +166,7 @@ class ResponseCodesIntegrationSpec extends IntegrationSpec {
     @Unroll
     def 'should return NOT_FOUND response on #methodName if cache for given key does not exists'() {
         given:
-        Request allKeysRequest = createRequest(methodName, methodBody)
+        Request allKeysRequest = createCacheRequest(methodName, methodBody)
 
         when:
         Response response = okHttpClient.newCall(allKeysRequest).execute()
@@ -192,7 +181,7 @@ class ResponseCodesIntegrationSpec extends IntegrationSpec {
         'DELETE'   | null
     }
 
-    private Request createRequest(String methodName, RequestBody methodBody) {
+    private Request createCacheRequest(String methodName, RequestBody methodBody = null) {
         return new Request.Builder()
                 .url("http://localhost:8080/api/${apiKey}/${cacheKey}")
                 .method(methodName, methodBody)
