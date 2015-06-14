@@ -31,7 +31,7 @@ class CacheIntegrationSpec extends IntegrationSpec {
         cacheRepository.deleteAll()
     }
 
-    def 'should get empty list of cached values'() {
+    def 'should get empty list of cached values for apiKey'() {
         given:
         Request allKeysRequest = new Request.Builder()
                 .url("http://localhost:8080/api/${apiKey}")
@@ -49,19 +49,23 @@ class CacheIntegrationSpec extends IntegrationSpec {
         apiJson.size() == 0
     }
 
-    def 'should get 404 for if api does not exist'() {
+    def 'should get list of cached values for apiKey'() {
         given:
-        String apiKey = UUID.randomUUID().toString()
-        Request allKeysRequest = new Request.Builder().url("http://localhost:8080/api/${apiKey}").build()
-
-        expect:
-        apiRepository.exists(apiKey) == false
+        Cache savedCache = new Cache(api: apiKey, key: cacheKey, value: 'saved_value')
+        cacheRepository.save(savedCache)
+        Request allKeysRequest = new Request.Builder()
+                .url("http://localhost:8080/api/${apiKey}")
+                .build()
 
         when:
         Response response = okHttpClient.newCall(allKeysRequest).execute()
 
         then:
-        response.code() == 404
+        response.code() == 200
+        def apiJson = new JsonSlurper().parseText(response.body().string())
+        apiJson.size() == 1
+        apiJson.first().key == savedCache.key
+        apiJson.first().value == savedCache.value
     }
 
     def 'should get saved cache value for given key'() {
@@ -83,19 +87,6 @@ class CacheIntegrationSpec extends IntegrationSpec {
         json.value == savedCache.value
     }
 
-    def 'should get 404 if given key does not exists'() {
-        given:
-        Request allKeysRequest = new Request.Builder()
-                .url("http://localhost:8080/api/${apiKey}/${cacheKey}")
-                .build()
-
-        when:
-        Response response = okHttpClient.newCall(allKeysRequest).execute()
-
-        then:
-        response.code() == 404
-    }
-
     def 'should create cache'() {
         given:
         Map cacheRequest = [cacheValue: 'somevalue']
@@ -114,39 +105,41 @@ class CacheIntegrationSpec extends IntegrationSpec {
         cache.value == cacheRequest.cacheValue
     }
 
-    def 'should get 404 on create cache if apikey does not exist'() {
+    def 'should update cache'() {
         given:
-        String apiKey = UUID.randomUUID().toString()
-        Map cacheRequest = [cacheValue: 'somevalue']
-        RequestBody body = RequestBody.create(JSON, new JsonBuilder(cacheRequest).toString())
-        Request postRequest = new Request.Builder()
+        Cache savedCache = new Cache(api: apiKey, key: cacheKey, value: 'someValue')
+        cacheRepository.save(savedCache)
+        String newValue = 'newValue'
+        RequestBody requestBody = RequestBody.create(JSON, "{\"cacheValue\": \"$newValue\"}")
+        Request request = new Request.Builder()
                 .url("http://localhost:8080/api/${apiKey}/${cacheKey}")
-                .post(body)
+                .put(requestBody)
                 .build()
 
         when:
-        Response response = okHttpClient.newCall(postRequest).execute()
+        Response response = okHttpClient.newCall(request).execute()
 
         then:
-        response.code() == 404
+        response.code() == 200
+        Cache updatedCache = cacheRepository.findOne(savedCache.id)
+        updatedCache.value == newValue
     }
 
-    def 'should get 400 on create cache if cache key already exist'() {
+    def 'should delete cache'() {
         given:
-        cacheRepository.save(new Cache(api: apiKey, key: cacheKey, value: 'someValue'))
-        Map cacheRequest = [cacheValue: 'somevalue']
-        RequestBody body = RequestBody.create(JSON, new JsonBuilder(cacheRequest).toString())
-        Request postRequest = new Request.Builder()
+        Cache savedCache = new Cache(api: apiKey, key: cacheKey, value: 'someValue')
+        cacheRepository.save(savedCache)
+        Request deleteRequest = new Request.Builder()
                 .url("http://localhost:8080/api/${apiKey}/${cacheKey}")
-                .post(body)
+                .delete()
                 .build()
-        println postRequest.toString()
 
         when:
-        Response response = okHttpClient.newCall(postRequest).execute()
+        Response response = okHttpClient.newCall(deleteRequest).execute()
 
         then:
-        response.code() == 409 //conflict
+        response.code() == 200
+        cacheRepository.exists(savedCache.id) == false
     }
 
 }
