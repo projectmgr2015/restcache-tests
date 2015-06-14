@@ -9,7 +9,7 @@ import pl.mjasion.restcache.domain.Cache
 import pl.mjasion.restcache.domain.CacheRepository
 import spock.lang.Unroll
 
-class CacheResponseCodesIntegrationSpec extends IntegrationSpec {
+class ResponseCodesIntegrationSpec extends IntegrationSpec {
 
     @Autowired ApiRepository apiRepository
     @Autowired CacheRepository cacheRepository
@@ -29,6 +29,95 @@ class CacheResponseCodesIntegrationSpec extends IntegrationSpec {
     def cleanup() {
         apiRepository.deleteAll()
         cacheRepository.deleteAll()
+    }
+
+    def 'should return OK response on getting apiKey'() {
+        given:
+        Request apiRequest = new Request.Builder().url('http://localhost:8080/api').build()
+
+        when:
+        Response response = okHttpClient.newCall(apiRequest).execute()
+
+        then:
+        response.code() == 200
+    }
+
+    def 'should return OK response on getting list of cached values for given apiKey'() {
+        given:
+        Request allKeysRequest = new Request.Builder()
+                .url("http://localhost:8080/api/${apiKey}")
+                .build()
+
+        when:
+        Response response = okHttpClient.newCall(allKeysRequest).execute()
+
+        then:
+        response.code() == 200
+    }
+
+    def 'should return OK response on getting cache'() {
+        given:
+        Cache savedCache = new Cache(api: apiKey, key: cacheKey, value: 'saved_value')
+        cacheRepository.save(savedCache)
+        Request allKeysRequest = new Request.Builder()
+                .url("http://localhost:8080/api/${apiKey}/${cacheKey}")
+                .build()
+
+        when:
+        Response response = okHttpClient.newCall(allKeysRequest).execute()
+
+        then:
+        response.code() == 200
+    }
+
+    def 'should return OK response on creating cache'() {
+        given:
+        Map cacheRequest = [cacheValue: 'somevalue']
+        RequestBody body = RequestBody.create(JSON, new JsonBuilder(cacheRequest).toString())
+        Request postRequest = new Request.Builder()
+                .url("http://localhost:8080/api/${apiKey}/${cacheKey}")
+                .post(body)
+                .build()
+
+        when:
+        Response response = okHttpClient.newCall(postRequest).execute()
+
+        then:
+        response.code() == 200
+    }
+
+    def 'should return OK response on updating cache'() {
+        given:
+        Cache savedCache = new Cache(api: apiKey, key: cacheKey, value: 'someValue')
+        cacheRepository.save(savedCache)
+        String newValue = 'newValue'
+        RequestBody requestBody = RequestBody.create(JSON, "{\"cacheValue\": \"$newValue\"}")
+        Request request = new Request.Builder()
+                .url("http://localhost:8080/api/${apiKey}/${cacheKey}")
+                .put(requestBody)
+                .build()
+
+        when:
+        Response response = okHttpClient.newCall(request).execute()
+
+        then:
+        response.code() == 200
+    }
+
+    def 'should return OK response on deleting cache'() {
+        given:
+        Cache savedCache = new Cache(api: apiKey, key: cacheKey, value: 'someValue')
+        cacheRepository.save(savedCache)
+        Request deleteRequest = new Request.Builder()
+                .url("http://localhost:8080/api/${apiKey}/${cacheKey}")
+                .delete()
+                .build()
+
+        when:
+        Response response = okHttpClient.newCall(deleteRequest).execute()
+
+        then:
+        response.code() == 200
     }
 
     def 'should return CONFLICT response on create cache if cache key already exist'() {

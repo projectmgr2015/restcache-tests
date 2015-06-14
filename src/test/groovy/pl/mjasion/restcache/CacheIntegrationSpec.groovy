@@ -44,7 +44,6 @@ class CacheIntegrationSpec extends IntegrationSpec {
         Response response = okHttpClient.newCall(allKeysRequest).execute()
 
         then:
-        response.code() == 200
         def apiJson = new JsonSlurper().parseText(response.body().string())
         apiJson.size() == 0
     }
@@ -61,7 +60,6 @@ class CacheIntegrationSpec extends IntegrationSpec {
         Response response = okHttpClient.newCall(allKeysRequest).execute()
 
         then:
-        response.code() == 200
         def apiJson = new JsonSlurper().parseText(response.body().string())
         apiJson.size() == 1
         apiJson.first().key == savedCache.key
@@ -80,7 +78,6 @@ class CacheIntegrationSpec extends IntegrationSpec {
         Response response = okHttpClient.newCall(allKeysRequest).execute()
 
         then:
-        response.code() == 200
         def json = new JsonSlurper().parseText(response.body().string())
         json.api == savedCache.api
         json.key == savedCache.key
@@ -97,10 +94,9 @@ class CacheIntegrationSpec extends IntegrationSpec {
                 .build()
 
         when:
-        Response response = okHttpClient.newCall(postRequest).execute()
+        okHttpClient.newCall(postRequest).execute()
 
         then:
-        response.code() == 200
         Cache cache = cacheRepository.findAll().find { it.key == cacheKey }
         cache.value == cacheRequest.cacheValue
     }
@@ -117,10 +113,9 @@ class CacheIntegrationSpec extends IntegrationSpec {
                 .build()
 
         when:
-        Response response = okHttpClient.newCall(request).execute()
+        okHttpClient.newCall(request).execute()
 
         then:
-        response.code() == 200
         Cache updatedCache = cacheRepository.findOne(savedCache.id)
         updatedCache.value == newValue
     }
@@ -135,10 +130,9 @@ class CacheIntegrationSpec extends IntegrationSpec {
                 .build()
 
         when:
-        Response response = okHttpClient.newCall(deleteRequest).execute()
+        okHttpClient.newCall(deleteRequest).execute()
 
         then:
-        response.code() == 200
         cacheRepository.exists(savedCache.id) == false
     }
 

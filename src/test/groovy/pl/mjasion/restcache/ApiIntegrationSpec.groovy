@@ -27,7 +27,6 @@ class ApiIntegrationSpec extends IntegrationSpec {
         Response response = okHttpClient.newCall(apiRequest).execute()
 
         then:
-        response.code() == 200
         def apiJson = new JsonSlurper().parseText(response.body().string())
         apiJson.key ==~ /^[a-z\d-]{36}$/
     }
@@ -40,7 +39,6 @@ class ApiIntegrationSpec extends IntegrationSpec {
         Response response = okHttpClient.newCall(apiRequest).execute()
 
         then:
-        response.code() == 200
         def apiJson = new JsonSlurper().parseText(response.body().string())
         apiRepository.exists(apiJson.key)
     }
