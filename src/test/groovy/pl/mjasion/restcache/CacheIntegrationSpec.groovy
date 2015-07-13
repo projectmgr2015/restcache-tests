@@ -93,6 +93,7 @@ class CacheIntegrationSpec extends IntegrationSpec {
 
         then:
         Cache cache = cacheRepository.findAll().find { it.key == cacheKey }
+        cache != null
         cache.value == cacheRequest.cacheValue
     }
 
@@ -109,6 +110,7 @@ class CacheIntegrationSpec extends IntegrationSpec {
 
         then:
         Cache updatedCache = cacheRepository.findOne(savedCache.id)
+        updatedCache != null
         updatedCache.value == newValue
     }
 
