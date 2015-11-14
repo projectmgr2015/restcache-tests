@@ -56,6 +56,10 @@ class CacheIntegrationSpec extends IntegrationSpec {
                 .url("http://localhost:8080/api/${apiKey}")
                 .build()
 
+        expect:
+        savedCache.id != null
+        cacheRepository.exists(savedCache.id)
+
         when:
         Response response = okHttpClient.newCall(allKeysRequest).execute()
 
